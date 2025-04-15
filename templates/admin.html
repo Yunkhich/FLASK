@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Админ-панель</title>
+    <style>
+        /* Аналогичные стили из index.html с добавлением кнопки удаления */
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-danger:hover { background: #bb2d3b; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="main-content">
+            <h1>Административная панель</h1>
+            <ul class="file-list">
+                {% for file in files %}
+                <li class="file-item">
+                    <div class="file-icon">🗑</div>
+                    <div class="file-info">
+                        <div>{{ file.name }}</div>
+                        <div>{{ file.size|filesizeformat }} | {{ file.created_at.strftime('%d.%m.%Y %H:%M') }}</div>
+                    </div>
+                    <div class="file-actions">
+                        <button onclick="location.href='{{ url_for('delete_file', file_id=file.id) }}'"
+                                class="btn btn-danger">
+                            Удалить
+                        </button>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
