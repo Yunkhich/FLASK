@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Файловый сервер</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background: #f0faff;
+            color: #2c3e50;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            display: flex;
+            gap: 30px;
+        }
+        .main-content { flex: 1; }
+        .preview-sidebar {
+            width: 400px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+        }
+        .file-list { list-style: none; padding: 0; }
+        .file-item {
+            background: white;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .file-icon {
+            width: 40px;
+            height: 40px;
+            background: #e1f5fe;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .file-info { flex-grow: 1; }
+        .file-actions { display: flex; gap: 10px; }
+        .btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-primary {
+            background: #007acc;
+            color: white;
+        }
+        .btn-primary:hover { background: #005f99; }
+        .sort-buttons { margin-bottom: 20px; display: flex; gap: 10px; }
+        .preview-content {
+            max-width: 100%;
+            max-height: 600px;
+            overflow: auto;
+        }
+        .preview-content img, .preview-content video {
+            max-width: 100%;
+            border-radius: 8px;
+        }
+        form { margin-top: 20px; }
+        input[type="file"] { margin-right: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="main-content">
+            <h1>Файловый сервер</h1>
+
+            <div class="sort-buttons">
+                <button class="btn btn-primary" onclick="sortFiles('name')">Сортировать по имени</button>
+                <button class="btn btn-primary" onclick="sortFiles('size')">Сортировать по размеру</button>
+                <button class="btn btn-primary" onclick="sortFiles('created_at')">Сортировать по дате</button>
+            </div>
+
+            <ul class="file-list">
+                {% for file in files %}
+                <li class="file-item">
+                    <div class="file-icon">
+                        {% if file.mime_type.startswith('image') %}📷
+                        {% elif file.mime_type.startswith('video') %}🎥
+                        {% elif file.mime_type == 'text/plain' %}📄
+                        {% else %}📁
+                        {% endif %}
+                    </div>
+                    <div class="file-info">
+                        <a href="{{ url_for('download_file', filename=file.name) }}" style="font-weight: bold;">{{ file.name }}</a>
+                        <div>Размер: {{ file.size|filesizeformat }}</div>
+                        <div>Загружен: {{ file.created_at.strftime('%d.%m.%Y %H:%M') }}</div>
+                    </div>
+                    <div class="file-actions">
+                        <button class="btn btn-primary" onclick="showPreview('{{ url_for('uploaded_file', filename=file.name) }}', '{{ file.mime_type }}')">
+                            Просмотр
+                        </button>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+
+            <form action="{{ url_for('upload_file') }}" method="POST" enctype="multipart/form-data">
+                <input type="file" name="file" required>
+                <button type="submit" class="btn btn-primary">Загрузить файл</button>
+            </form>
+        </div>
+
+        <div class="preview-sidebar">
+            <h3>Предпросмотр</h3>
+            <div class="preview-content" id="previewContent"></div>
+        </div>
+    </div>
+
+    <script>
+        function sortFiles(sortBy) {
+            const order = '{{ order }}' === 'asc' && '{{ sort_by }}' === sortBy ? 'desc' : 'asc';
+            window.location.href = `?sort_by=${sortBy}&order=${order}`;
+        }
+
+        function showPreview(url, mimeType) {
+            const preview = document.getElementById('previewContent');
+            preview.innerHTML = '';
+
+            if (mimeType.startsWith('image')) {
+                const img = document.createElement('img');
+                img.src = url;
+                preview.appendChild(img);
+            }
+            else if (mimeType.startsWith('video')) {
+                const video = document.createElement('video');
+                video.controls = true;
+                video.src = url;
+                video.style.width = '100%';
+                preview.appendChild(video);
+            }
+            else if (mimeType === 'text/plain') {
+                fetch(url)
+                    .then(response => response.text())
+                    .then(text => {
+                        const pre = document.createElement('pre');
+                        pre.style.whiteSpace = 'pre-wrap';
+                        pre.textContent = text;
+                        preview.appendChild(pre);
+                    });
+            }
+            else {
+                preview.textContent = 'Предпросмотр недоступен';
+            }
+        }
+    </script>
+</body>
+</html>
